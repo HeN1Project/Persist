@@ -204,6 +204,8 @@ void ArchiveWriterJson::SerializeField( RapidJsonWriter& writer, void* instance,
 
 void ArchiveWriterJson::SerializeTranslator( RapidJsonWriter& writer, Pointer pointer, Translator* translator, const Field* field, Object* object )
 {
+    char buff[256]={'\0'};
+
 	switch ( translator->GetMetaId() )
 	{
 	case MetaIds::PointerTranslator:
@@ -224,7 +226,7 @@ void ArchiveWriterJson::SerializeTranslator( RapidJsonWriter& writer, Pointer po
 				writer.EndObject();
 				break;
 			}
-				
+
 			// fall through!!
 		}
 
@@ -279,6 +281,29 @@ void ArchiveWriterJson::SerializeTranslator( RapidJsonWriter& writer, Pointer po
 			case ScalarTypes::Float64:
 				writer.Double( pointer.As<float64_t>() );
 				break;
+
+    // HEN1 : TODO !!
+            case ScalarTypes::ComplexFloat32 :
+                {
+                   const std::complex<float32_t>& cplx =pointer.As< std::complex<float32_t> >();
+                   // writer.Double( cplx.real() );
+                   // writer.Double( cplx.imag() );
+                   sprintf(buff, "%.9g + %.9g*I", (double)cplx.real(), (double)cplx.imag());
+                   writer.String( buff );
+                   break;
+                }
+
+             case ScalarTypes::ComplexFloat64 :
+                {
+                   const std::complex<float64_t>& cplx =pointer.As< std::complex<float64_t> >();
+                   // writer.Double( cplx.real() );
+                   // writer.Double( cplx.imag() );
+                   sprintf(buff, "%.9g + %.9g*I", (double)cplx.real(), (double)cplx.imag());
+                   writer.String( buff );
+                  break;
+                }
+
+
 
 			case ScalarTypes::String:
 				String str;
@@ -513,7 +538,7 @@ void ArchiveReaderJson::Start()
 			{
 				break;
 			}
-			
+
 			++i;
 		}
 
@@ -530,7 +555,7 @@ bool ArchiveReaderJson::ReadNext( Reflect::ObjectPtr& object, size_t index )
 	}
 
 	rapidjson::Value& value = m_Document[ m_Next ];
-	
+
 	if ( HELIUM_VERIFY( value.IsObject() ) )
 	{
 		rapidjson::Value::Member* member = value.MemberBegin();
@@ -558,7 +583,7 @@ bool ArchiveReaderJson::ReadNext( Reflect::ObjectPtr& object, size_t index )
 						objectClassCrc);
 				}
 			}
-			
+
 			if ( !object && HELIUM_VERIFY( objectClass ) )
 			{
 				object = AllocateObject( objectClass, index );
@@ -621,7 +646,7 @@ void ArchiveReaderJson::DeserializeInstance( rapidjson::Value& value, void* inst
 						"ArchiveReaderJson::DeserializeInstance - Could not find field with CRC-32 %" PRIu32 ")\n",
 						fieldCrc);
 				}
-				
+
 			}
 		}
 	}
@@ -634,7 +659,7 @@ void ArchiveReaderJson::DeserializeField( rapidjson::Value& value, void* instanc
 #if PERSIST_ARCHIVE_VERBOSE
 	Log::Print(TXT("Deserializing field %s\n"), field->m_Name);
 #endif
-	
+
 	if ( field->m_Count > 1 )
 	{
 		if ( value.IsArray() )
@@ -682,7 +707,7 @@ void ArchiveReaderJson::DeserializeTranslator( rapidjson::Value& value, Pointer 
 			case ScalarTypes::Boolean:
 			case ScalarTypes::String:
 				break;
-				
+
 			case ScalarTypes::Unsigned8:
 				RangeCastInteger( value.GetUint(), pointer.As<uint8_t>(), clamp );
 				break;
@@ -722,6 +747,24 @@ void ArchiveReaderJson::DeserializeTranslator( rapidjson::Value& value, Pointer 
 			case ScalarTypes::Float64:
 				RangeCastFloat( value.GetDouble(), pointer.As<float64_t>(), clamp );
 				break;
+              // HEN1 : TODO !!
+            case ScalarTypes::ComplexFloat32 :
+                {
+                    std::complex<float32_t>& cplx =pointer.As< std::complex<float32_t> >();
+                //    RangeCastFloat( value.GetDouble(), cplx.real(), clamp );
+                 //   RangeCastFloat( value.GetDouble(), cplx.imag(), clamp );
+                 break;
+                }
+
+             case ScalarTypes::ComplexFloat64 :
+                {
+                    std::complex<float64_t>& cplx =pointer.As< std::complex<float64_t> >();
+                //    RangeCastFloat( value.GetDouble(), cplx.real(), clamp );
+                //    RangeCastFloat( value.GetDouble(), cplx.imag(), clamp );
+                break;
+
+                }
+
 			}
 		}
 	}
@@ -786,7 +829,7 @@ void ArchiveReaderJson::DeserializeTranslator( rapidjson::Value& value, Pointer 
 				{
 					objectClass = Registry::GetInstance()->GetMetaClass( objectClassCrc );
 				}
-			
+
 				if ( !object && HELIUM_VERIFY( objectClass ) )
 				{
 					object = objectClass->m_Creator();
